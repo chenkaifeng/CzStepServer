@@ -10,14 +10,14 @@ steps          提交的步数
 
 flag             是否开启自动刷步   0为不自动刷步  1为自动刷步   刷步时间为每日中午12点
 
-
+date    修改的日期 yyyyMMdd格式
 
 ## 单次提交步数
 
 get请求 
 
 ```http
-  /Service/updateStep?phone=18888888888&password=CZ123456&steps=9990&flag=0
+  /Service/updateStep?phone=18888888888&password=CZ123456&steps=9990&flag=0&date=20200901
 ```
 
 响应 
