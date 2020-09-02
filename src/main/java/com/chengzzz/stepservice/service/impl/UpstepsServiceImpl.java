@@ -8,6 +8,7 @@ import com.chengzzz.stepservice.callback.resultCallBack;
 import com.chengzzz.stepservice.dao.UpstepsDao;
 import com.chengzzz.stepservice.entity.*;
 import com.chengzzz.stepservice.service.UpstepsService;
+import com.chengzzz.stepservice.utils.DateUtils;
 import com.google.gson.Gson;
 import okhttp3.*;
 import org.apache.ibatis.logging.Log;
@@ -42,24 +43,24 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     @Autowired
     private UpstepsDao upstepsDao;
-/**
- * 
- * @param phone phone 
- * @param pwd pwd 
- * @param Steps Steps 
- * @param flag flag 
- * @param resultCallBack resultCallBack 
- * @return void
- * @author 等什么柠檬君
- * @since 2020/8/22
- * @description    
- */
+
+    /**
+     * @param phone          phone
+     * @param pwd            pwd
+     * @param Steps          Steps
+     * @param flag           flag
+     * @param resultCallBack resultCallBack
+     * @return void
+     * @author 等什么柠檬君
+     * @description
+     * @since 2020/8/22
+     */
 
     @Override
-    public void updateStep(String phone, String pwd, String Steps, int flag, resultCallBack resultCallBack) {
+    public void updateStep(String phone, String pwd, String Steps, int flag, String date, resultCallBack resultCallBack) {
 
-            Upsteps upsteps =new Upsteps(phone,pwd,Steps,flag);
-            QueryWrapper<Upsteps> queryWrapper=new QueryWrapper<>();
+        Upsteps upsteps = new Upsteps(phone, pwd, Steps, flag);
+            /*QueryWrapper<Upsteps> queryWrapper=new QueryWrapper<>();
             queryWrapper.eq("phone",phone);
             Upsteps old = upstepsDao.selectOne(queryWrapper);
             if(null != old){
@@ -67,64 +68,59 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
                 upstepsDao.updateById(upsteps);
             }else {
                 upstepsDao.insert(upsteps);
+            }*/
+        LoginByPwd(new PostData(phone, md5(pwd)), Steps, date, new UpdateCallBack() {
+
+            @Override
+            public void updateCallback(String msg) {
+
+                logger.info("Callback中的Msg" + msg);
+                resultCallBack.updateResult(msg);
+
+
             }
-          LoginByPwd(new PostData(phone, md5(pwd)), Steps, new UpdateCallBack() {
 
-              @Override
-              public void updateCallback(String msg) {
-
-                  logger.info("Callback中的Msg"+msg);
-                  resultCallBack.updateResult(msg);
-
-
-              }
-
-          });
-
+        });
 
 
     }
 
-    
-    
-    
+
     /**
-     * 
-     * @param upsteps upsteps 
+     * @param upsteps upsteps
      * @return void
      * @author 等什么柠檬君
+     * @description
      * @since 2020/8/22
-     * @description    
      */
     @Override
     public void updateOrInsert(Upsteps upsteps) {
-        QueryWrapper<Upsteps> queryWrapper=new QueryWrapper<>();
-        queryWrapper.eq("phone",upsteps.getPhone());
+        QueryWrapper<Upsteps> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("phone", upsteps.getPhone());
         Upsteps old = upstepsDao.selectOne(queryWrapper);
-        if(null != old){
+        if (null != old) {
             upsteps.setId(old.getId());
             upstepsDao.updateById(upsteps);
-        }else {
+        } else {
             upstepsDao.insert(upsteps);
         }
     }
 
-    public void postAsynModifyStepsHttp(String cookies,String steps, String userid,final  mModifyCallback callback) throws ParseException {
-        OkHttpClient okHttpClient  = new OkHttpClient.Builder()
+    public void postAsynModifyStepsHttp(String cookies, String steps, String userid, String date, final mModifyCallback callback) throws ParseException {
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10,TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .build();
-        logger.info("下面开始修改" );
-        int distance = Integer.parseInt(steps)/3;
+        logger.info("下面开始修改");
+        int distance = Integer.parseInt(steps) / 3;
         int calories = Integer.parseInt(steps) / 4;
-        logger.debug( "这是修改的卡路里: "+calories );
-        logger.debug("这是修改的步数: "+steps);
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        SimpleDateFormat df2 = new SimpleDateFormat("yyyy-MM-dd");
-        int t= (int)System.currentTimeMillis();
-        Timestamp times = new Timestamp(new Date().getTime());
-        Date date = new Date(t);
+        logger.debug("这是修改的卡路里: " + calories);
+        logger.debug("这是修改的步数: " + steps);
+
+        //修改步数的日期
+        Date testDate = DateUtils.parseDateNoTime(date);
+        String DateString = DateUtils.getNewFormatDateString(testDate);
         Gson gson = new Gson();
         //使用Gson将对象转换为json字符串
         listdata listdata = new listdata();
@@ -132,7 +128,7 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
         Modifydata modifydata = new Modifydata();
         listdata.setCalories(calories);
         listdata.setDistance(distance);
-        listdata.setMeasurementTime(  df.format(new Date())+"");
+        listdata.setMeasurementTime(DateString);
         listdata.setUpdated(System.currentTimeMillis());
         listdata.setStep(Integer.parseInt(steps));
         listdata.setUserId(Integer.parseInt(userid));
@@ -141,15 +137,15 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
         modifydata.setList(data);
 
 
-        logger.info("这是修改的测试时间: "+ df.format(new Date()) );
-        logger.info("这是修改的测试时间戳: "+System.currentTimeMillis() );
-        logger.info("这是修改的距离: "+distance );
+        logger.info("这是修改的测试时间: " + DateString);
+        logger.info("这是修改的测试时间戳: " + System.currentTimeMillis());
+        logger.info("这是修改的距离: " + distance);
 
 
-        logger.debug("从sp中取出的cookie: "+ cookies);
+        logger.debug("从sp中取出的cookie: " + cookies);
         String json = gson.toJson(modifydata);
 
-        logger.info("这是修改的json请求体: "+json );
+        logger.info("这是修改的json请求体: " + json);
         //MediaType  设置Content-Type 标头中包含的媒体类型值
         RequestBody requestBody = FormBody.create(MediaType.parse("application/json; charset=utf-8")
                 , json);
@@ -174,21 +170,21 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
                 callback.onModify("修改步数时连接失败");
 
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
 
 
+                String json = response.body().string();  //假设从服务拿出来的json字符串，就是上面的内容
 
-                String json=response.body().string();  //假设从服务拿出来的json字符串，就是上面的内容
-
-                logger.info("提交更改步数后的响应 onResponse: "+json);
+                logger.info("提交更改步数后的响应 onResponse: " + json);
                 JSONObject personObj = null;
                 try {
                     personObj = new JSONObject(json);
-                    String code=personObj.getString("code");
-                    String msg=personObj.getString("msg");
+                    String code = personObj.getString("code");
+                    String msg = personObj.getString("msg");
 
-                        callback.onModify(json);
+                    callback.onModify(json);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -200,16 +196,16 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
     }
 
 
-    private Boolean LoginByPwd(PostData upsteps,String Steps,final  UpdateCallBack callBack) {
+    private Boolean LoginByPwd(PostData upsteps, String Steps, String date, final UpdateCallBack callBack) {
 
-        OkHttpClient okHttpClient  = new OkHttpClient.Builder()
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10,TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .build();
         final Gson gson = new Gson();
         String json = gson.toJson(upsteps);
-        logger.debug("密码登录的请求体: "+json );
+        logger.debug("密码登录的请求体: " + json);
         RequestBody requestBody = FormBody.create(MediaType.parse("application/json; charset=utf-8")
                 , json);
         Request request = new Request.Builder()
@@ -227,27 +223,28 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
             public void onFailure(Call call, IOException e) {
                 logger.info("连接失败");
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (null != response.header("Set-Cookie")) {
-                   cookie = response.header("Set-Cookie");
-                    logger.info("登录响应的cookie: "+cookie );
+                    cookie = response.header("Set-Cookie");
+                    logger.info("登录响应的cookie: " + cookie);
 
                 }
 
-                String json=response.body().string();  //假设从服务拿出来的json字符串，就是上面的内容
-                logger.info("登录结果的响应: "+json );
+                String json = response.body().string();  //假设从服务拿出来的json字符串，就是上面的内容
+                logger.info("登录结果的响应: " + json);
                 UserInfo account = new Gson().fromJson(json, UserInfo.class);
-                if (!account.getCode().equals("200")){
+                if (!account.getCode().equals("200")) {
                     callBack.updateCallback(json);
 
-                }else{
-                    String  userid = account.getData().getUserId().toString();
+                } else {
+                    String userid = account.getData().getUserId().toString();
                     logger.debug(userid);
                     callBack.updateCallback(cookie);
 
                     try {
-                        postAsynModifyStepsHttp(cookie, Steps, userid, new mModifyCallback() {
+                        postAsynModifyStepsHttp(cookie, Steps, userid, date, new mModifyCallback() {
                             @Override
                             public void onModify(String msg) {
                                 callBack.updateCallback(msg);
@@ -260,11 +257,10 @@ public class UpstepsServiceImpl extends ServiceImpl<UpstepsDao, Upsteps> impleme
                 }
 
 
-
             }
         });
 
-    return true;
+        return true;
     }
 
 

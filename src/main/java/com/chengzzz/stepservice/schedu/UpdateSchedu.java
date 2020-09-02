@@ -30,6 +30,7 @@ public class UpdateSchedu {
     private UpstepsDao upstepsDao;
     @Autowired
      private  UpstepsService upstepsService;
+
     @Scheduled(cron = "0 0 12 * * ?")
     public void schedu() {
         QueryWrapper<Upsteps> queryWrapper = new QueryWrapper<>();
@@ -37,7 +38,7 @@ public class UpdateSchedu {
         List<Upsteps> userList = upstepsDao.selectList(queryWrapper);
         logger.info("时间到了"+userList);
         for (Upsteps single : userList){
-            upstepsService.updateStep(single.getPhone(), single.getPassword(), single.getSteps(), single.getFlag(), new resultCallBack() {
+            upstepsService.updateStep(single.getPhone(), single.getPassword(), single.getSteps(), single.getFlag(), "", new resultCallBack() {
                 @Override
                 public void updateResult(String msg) {
                     logger.info("用户:"+single.getPhone()+" 步数:"+single.getSteps()+" 返回："+msg);

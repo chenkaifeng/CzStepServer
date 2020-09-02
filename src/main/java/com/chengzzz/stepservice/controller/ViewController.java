@@ -30,51 +30,53 @@ import static java.lang.Thread.sleep;
 
 @RestController
 @Slf4j
-@RequestMapping(value="Service")
+@RequestMapping(value = "Service")
 public class ViewController {
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    static  String tx = "手机号非法";
+
+    static String tx = "手机号非法";
     @Autowired
     private UpstepsService upstepsService;
-    @Autowired
-    private UpstepsDao upstepsDao;
-    @RequestMapping(value="updateStep",method = RequestMethod.GET)
-    public String login(@RequestParam("phone") String phone, @RequestParam("password")String password,@RequestParam("steps")String step,@RequestParam("flag")int flag, Model model){
+
+    @RequestMapping(value = "updateStep", method = RequestMethod.GET)
+    public String login(@RequestParam("phone") String phone, @RequestParam("password") String password, @RequestParam("steps") String step, @RequestParam("flag") int flag, @RequestParam("date") String date, Model model) {
 
 
-     if (phone.length() != 11){
-         return "{\"code\":510,\"msg\":\"手机号长度错误\"}";
-     }else {
-         if (flag==1) {
-             Upsteps upsteps =new Upsteps(phone,password,step,flag,"");
-             upstepsService.updateOrInsert(upsteps);
-             return "{\"code\":508,\"msg\":\"已加入数据库进行定时任务\"}";
-         } else if (flag==0){
-            upstepsService.updateStep(phone, password, step,flag, new resultCallBack() {
-                @Override
-                public void updateResult(String msg) {
-                    getMsg(msg);
-                    logger.info("控制器返回的msg"+msg);
+        if (phone.length() != 11) {
+            return "{\"code\":510,\"msg\":\"手机号长度错误\"}";
+        } else {
+            if (flag == 1) {
+                Upsteps upsteps = new Upsteps(phone, password, step, flag, "");
+                upstepsService.updateOrInsert(upsteps);
+                return "{\"code\":508,\"msg\":\"已加入数据库进行定时任务\"}";
+            } else if (flag == 0) {
+                upstepsService.updateStep(phone, password, step, flag, date, new resultCallBack() {
+                    @Override
+                    public void updateResult(String msg) {
+                        getMsg(msg);
+                        logger.info("控制器返回的msg" + msg);
+                    }
+                });
+
+                try {
+                    sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            });
-
-            try {
-                sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                return tx;
+            } else {
+                return "{\"code\":509,\"msg\":\"参数错误\"}";
             }
-            return tx;
-        }else {
-             return "{\"code\":509,\"msg\":\"参数错误\"}";
-         }
 
 
-     }
+        }
 
 
     }
-    public static void getMsg(String msg){
-       tx=msg;
+
+    public static void getMsg(String msg) {
+        tx = msg;
     }
 }
 
