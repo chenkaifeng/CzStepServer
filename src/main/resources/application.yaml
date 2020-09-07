@@ -17,3 +17,13 @@ spring:
       max-idle: 10
       initial-size: 1
       max-wait: 5000
+
+  thymeleaf:
+    cache: false
+
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  resources:
+    static-locations: classpath:/static/,classpath:/views/
