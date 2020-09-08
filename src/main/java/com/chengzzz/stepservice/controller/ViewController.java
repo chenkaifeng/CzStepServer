@@ -1,21 +1,24 @@
 package com.chengzzz.stepservice.controller;
 
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.chengzzz.stepservice.callback.resultCallBack;
-import com.chengzzz.stepservice.dao.UpstepsDao;
+import com.chengzzz.stepservice.entity.BatchUpdateStepData;
+import com.chengzzz.stepservice.entity.UpdateStepData;
 import com.chengzzz.stepservice.entity.Upsteps;
 import com.chengzzz.stepservice.service.UpstepsService;
+import com.chengzzz.stepservice.utils.ResultSet;
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static java.lang.Thread.sleep;
 
@@ -73,6 +76,33 @@ public class ViewController {
         }
 
 
+    }
+
+    @RequestMapping(value = "batchUpdateStep", method = RequestMethod.POST)
+    public ResultSet batchUpdateStep(@RequestBody BatchUpdateStepData batchUpdateStepData) {
+
+        logger.info("收到批量修改步数请求，手机号={}，修改列表={}", batchUpdateStepData.getPhone(), new Gson().toJson(batchUpdateStepData.getList()));
+        if (batchUpdateStepData.getPhone().length() != 11) {
+            return ResultSet.error("手机号码长度错误");
+        }
+        List<String> resultMsg = new ArrayList<>();
+
+        int size = batchUpdateStepData.getList().size();
+        CountDownLatch countDownLatch = new CountDownLatch(size);
+        for (UpdateStepData updateStepData : batchUpdateStepData.getList()) {
+            upstepsService.updateStep(batchUpdateStepData.getPhone(), batchUpdateStepData.getPassword(), updateStepData.getSteps(), 0, updateStepData.getDate().replaceAll("-", ""), (resultCallBack) msg -> {
+                logger.info("修改日期={}，步数={}，服务层返回的结果={}", updateStepData.getDate(), updateStepData.getSteps(), msg);
+                resultMsg.add(MessageFormat.format("修改日期=[{0}]，修改步数=[{1}]，结果=[{2}]\n", updateStepData.getDate(), updateStepData.getSteps(), msg));
+                countDownLatch.countDown();
+            });
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return ResultSet.ok().put("resultMsg", resultMsg);
     }
 
     public static void getMsg(String msg) {

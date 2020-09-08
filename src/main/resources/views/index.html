@@ -125,16 +125,9 @@
         © layui.com - 底部固定区域
     </div>
 
-
 </div>
 
-<div id="processPart" style="display: none;margin: 10px">
-    <div class="layui-progress layui-progress-big" style="margin: 5px" lay-showpercent="yes" lay-filter="demo">
-        <div class="layui-progress-bar layui-bg-red" lay-percent="0%"></div>
-    </div>
-    <ul class="layui-timeline" id="timeline">
-    </ul>
-</div>
+
 
 <script src="../plugin/layui/layui.all.js"></script>
 <script src="../plugin/jquery/jquery.min.js"></script>
@@ -186,44 +179,27 @@
                     layer.confirm('确定变更选中的共计 [' + size + '] 项？', function (index) {
                         var phone = $('#phone').val()
                         var password = $('#password').val()
-
-
+                        var request = {'phone' : phone, 'password' : password, 'list' : data}
                         layer.close(index);
 
-                        //设置进度条
-                        layer.open({
-                            type: 1,
-                            title: false,
-                            area: ['806px', '467px'],
-                            closeBtn: 1,
-                            shadeClose: false,
-                            content: $('#processPart')
-                        });
-                        for (var i = 1; i <= size; i++) {
-
-
-                            var j = i;
-                            var steps = data[i - 1].steps;
-                            var date = data[i - 1].date;
-                            $.ajax({
-                                type: "GET",
-                                url: "/Service/updateStep",
-                                data: 'phone=' + phone + '&password=' + password + '&steps=' + data[i - 1].steps + '&flag=0&date=' + data[i - 1].date.replaceAll('-', ''),
-                                dataType: "json",
-                                success: function (result) {
-                                    console.log(result);
-                                    //设置进度条
-                                    element.progress('demo', (Math.round(j / size * 10000) / 100.00)+"%");
-                                    //加入时间线
-                                    $('#timeline').append('<li class="layui-timeline-item">\n' +
-                                        '            <i class="layui-icon layui-timeline-axis"></i>\n' +
-                                        '            <div class="layui-timeline-content layui-text">\n' +
-                                        '                <div class="layui-timeline-title">日期['+ date + ']步数['  + steps + ']修改结果:' + result.msg +'</div>\n' +
-                                        '            </div>\n' +
-                                        '        </li>');
+                        $.ajax({
+                            type: "POST",
+                            url: "/Service/batchUpdateStep",
+                            contentType:'application/json',
+                            data: JSON.stringify(request),
+                            dataType: "json",
+                            success: function (result) {
+                                if(result.code == 0){
+                                    var msg = ""
+                                    for(var i in result.resultMsg){
+                                        msg += result.resultMsg[i];
+                                    }
+                                    layer.alert(msg);
+                                }else {
+                                    layer.alert(result.msg)
                                 }
-                            });
-                        }
+                            }
+                        });
                     });
                 }
 
@@ -307,4 +283,6 @@
     }
 </script>
 </body>
+
+
 </html>
